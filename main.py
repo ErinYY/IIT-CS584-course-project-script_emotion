@@ -61,7 +61,8 @@ train['labels_temp'] = train['emotions'].apply(lambda x: [int(i) for i in x.spli
 
 full_data = train[['text', 'labels_temp']].copy()
 print(full_data.head())
-
+labels = []
+# np.array(full_data['labels_temp'])[:,0]
 
 
 full_data_shuff = full_data.sample(frac=1, random_state=42)
@@ -75,7 +76,8 @@ for i in range(6):
 
     train_df['labels'] = train_df['labels_temp'].apply(lambda x:x[i])
     train_dfs.append(train_df)
-    print(train_df)
+    print(i,train_df['labels'].value_counts())
+    # print(train_df)
 
 val_dfs = []
 for i in range(6):
