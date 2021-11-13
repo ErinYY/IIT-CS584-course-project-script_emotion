@@ -20,16 +20,16 @@ def my_score(y_true, y_pred, normalize=True, sample_weight=None):
     score = 1/(1+error_norm)
     return score
 
-
-
-class My_Model(ClassificationModel):
-    def compute_metrics(
-        self, preds, model_outputs, labels, eval_examples, multi_label=False, **kwargs
-    ):
-        extra_metrics = {}
-        for metric, func in kwargs.items():
-            extra_metrics[metric] = func(labels,preds)
-        return {**extra_metrics},["NA"]
+#
+#
+# class My_Model(ClassificationModel):
+#     def compute_metrics(
+#         self, preds, model_outputs, labels, eval_examples, multi_label=False, **kwargs
+#     ):
+#         extra_metrics = {}
+#         for metric, func in kwargs.items():
+#             extra_metrics[metric] = func(labels,preds)
+#         return {**extra_metrics},["NA"]
 
 train = pd.read_csv('train_dataset.tsv', sep='\t', error_bad_lines=False, warn_bad_lines=False)
 print(train.shape)
@@ -57,11 +57,11 @@ test['text'] = test['content'].astype(str) + ' 角色: ' + test['character'].ast
 
 
 
-train['labels_temp'] = train['emotions'].apply(lambda x: [int(i) for i in x.split(',')])
+train['labels'] = train['emotions'].apply(lambda x: [int(i) for i in x.split(',')])
 
-full_data = train[['text', 'labels_temp']].copy()
+full_data = train[['text', 'labels']].copy()
 print(full_data.head())
-labels = []
+# labels = []
 # np.array(full_data['labels_temp'])[:,0]
 
 
@@ -70,23 +70,23 @@ split_pos = int(len(full_data_shuff)*0.8)
 train_data = full_data_shuff.iloc[:split_pos,:]
 val_data = full_data_shuff.iloc[split_pos:,:]
 print(train_data.head())
-train_dfs = []
-for i in range(6):
-    train_df = train_data.copy()
+# train_dfs = []
+# for i in range(6):
+#     train_df = train_data.copy()
+#
+#     train_df['labels'] = train_df['labels_temp'].apply(lambda x:x[i])
+#     train_dfs.append(train_df)
+#     print(i,train_df['labels'].value_counts())
+#     # print(train_df)
 
-    train_df['labels'] = train_df['labels_temp'].apply(lambda x:x[i])
-    train_dfs.append(train_df)
-    print(i,train_df['labels'].value_counts())
-    # print(train_df)
-
-val_dfs = []
-for i in range(6):
-    val_df = val_data.copy()
-    val_df['labels'] = val_df['labels_temp'].apply(lambda x:x[i])
-    val_dfs.append(val_df)
-    print(val_df)
-# model_args = MultiLabelClassificationArgs()
-model_args = ClassificationArgs()
+# val_dfs = []
+# for i in range(6):
+#     val_df = val_data.copy()
+#     val_df['labels'] = val_df['labels_temp'].apply(lambda x:x[i])
+#     val_dfs.append(val_df)
+#     print(val_df)
+model_args = MultiLabelClassificationArgs()
+# model_args = ClassificationArgs()
 model_args.max_seq_length = 128
 model_args.num_train_epochs = 1
 model_args.no_save = False
@@ -98,41 +98,49 @@ model_args.regression = True
 # model_args.process_count = 1
 
 
-
-
-# model = MultiLabelClassificationModel('bert', model_path_or_name,args=model_args, num_labels=6) My_Model
+if is_train:
+    model_path_or_name = 'hfl/chinese-bert-wwm-ext'
+else:
+    model_path_or_name = 'outputs'
+model_args.cache_dir = 'cache_dir'
+model_args.output_dir = 'outputs'
+model = MultiLabelClassificationModel('bert', model_path_or_name,args=model_args, num_labels=6)
+# My_Model
 # model = My_Model('bert', model_path_or_name,args=model_args, num_labels=6)
-models = []
-scores = []
-pred_outputs_int = []
-for i in range(6):
-    if is_train:
-        model_path_or_name = 'hfl/chinese-bert-wwm-ext'
-    else:
-        model_path_or_name = 'outputs'+str(i)
-    model_args.cache_dir = 'cache_dir'+str(i)
-    model_args.output_dir = 'outputs'+str(i)
-    model = ClassificationModel('bert', model_path_or_name,num_labels=1,args=model_args)
-    models.append(model)
-    if is_train:
-        model.train_model(train_dfs[i],acc=my_score)
-    score, pred_outputs, wrong_preds = model.eval_model(val_dfs[i], score=my_score)
-    print(score)
-    round_vec = np.vectorize(round)
-    pred_outputs_int.append(round_vec(pred_outputs))
-    scores.append(score)
+# models = []
+# scores = []
+# pred_outputs_int = []
+# for i in range(6):
+#     if is_train:
+#         model_path_or_name = 'hfl/chinese-bert-wwm-ext'
+#     else:
+#         model_path_or_name = 'outputs'+str(i)
+#     model_args.cache_dir = 'cache_dir'+str(i)
+#     model_args.output_dir = 'outputs'+str(i)
+#     model = ClassificationModel('bert', model_path_or_name,num_labels=1,args=model_args)
+#     models.append(model)
+if is_train:
+    model.train_model(train_data,acc=my_score)
+# score, pred_outputs, wrong_preds = model.eval_model(val_data, score=my_score)
+pred_outputs = model.predict(list(val_data['text'].values))
+pred_outputs = pred_outputs[0]
+score = my_score(np.array(list(val_data['labels'].values)),np.array(pred_outputs))
+print(score)
+# round_vec = np.vectorize(round)
+# pred_outputs_int.append(round_vec(pred_outputs))
+# scores.append(score)
 # pred_outputs = np.array(pred_outputs)
-pred_outputs_int_merged = list(zip(pred_outputs_int[0],pred_outputs_int[1],pred_outputs_int[2],
-                                   pred_outputs_int[3],pred_outputs_int[4],pred_outputs_int[5]))
+# pred_outputs_int_merged = list(zip(pred_outputs_int[0],pred_outputs_int[1],pred_outputs_int[2],
+#                                    pred_outputs_int[3],pred_outputs_int[4],pred_outputs_int[5]))
 # print('===============================')
 # print(pred_outputs_int_merged)
-val_labels = list(val_dfs[0]['labels_temp'].values)
-val_labels = np.array(val_labels)
-pred_outputs_int_merged = np.array(pred_outputs_int_merged)
-final_score = my_score(val_labels,pred_outputs_int_merged)
-print('final score:',final_score)
-for i in range(6):
-    print(scores[i])
+# val_labels = list(val_dfs[0]['labels_temp'].values)
+# val_labels = np.array(val_labels)
+# pred_outputs_int_merged = np.array(pred_outputs_int_merged)
+# final_score = my_score(val_labels,pred_outputs_int_merged)
+# print('final score:',final_score)
+# for i in range(6):
+#     print(scores[i])
 # val_preds,val_raw_outputs = model.predict([text for text in val_data['text'].values])
 # val_labels = list(val_data['labels'].values)
 # val_preds = np.array(val_preds)

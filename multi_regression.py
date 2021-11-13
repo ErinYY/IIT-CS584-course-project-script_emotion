@@ -15,7 +15,7 @@ from torch.utils.data.dataloader import DataLoader
 from tqdm import tqdm
 is_train = False #True: 训练模型，False:加载模型进行预测
 model_path = 'multi_regression_model.pkl'
-max_epoch = 10
+max_epoch = 2
 path = os.getcwd()
 device = torch.device('cuda:0') if torch.cuda.is_available() else torch.device('cpu')
 
@@ -63,13 +63,13 @@ class MyDataSet(Dataset):
 
     def __len__(self):
         return len(self.texts)
-train_dataset = MyDataSet(train_data['text'].values,train_data['labels'].values)
+train_dataset = MyDataSet(full_data_shuff['text'].values,full_data_shuff['labels'].values) #全部数据，含val_data
 train_data_loader = DataLoader(train_dataset,batch_size=32,shuffle=False,num_workers=0)
 val_dataset = MyDataSet(val_data['text'].values,val_data['labels'].values)
 val_data_loader = DataLoader(val_dataset,batch_size=32,shuffle=False,num_workers=0)
 test_dataset = MyDataSet(test['text'].values)
 test_data_loader = DataLoader(test_dataset,batch_size=32,shuffle=False,num_workers=0)
-best_val_score = 0
+
 def my_score(y_true, y_pred, normalize=True, sample_weight=None):
     error_squre = (y_pred - y_true)**2
     # sum_error_squre_root = np.sqrt(np.sum(error_squre))
@@ -179,9 +179,11 @@ def run_train(mr_model,train_data_loader):
     optimizer = optim.Adam([{'params': base_params},
                             {'params': mr_model.electra_model.parameters(), 'lr': 1e-05}],
                            lr=1e-04)
+    best_epoch = 0
+    best_val_score = 0
     for epoch in range(max_epoch):
         mr_model.train()
-        for idx,data_batch in enumerate(tqdm(train_data_loader)):
+        for idx,data_batch in enumerate(tqdm(train_data_loader,desc='Epochs {}/{}'.format(epoch,max_epoch))):
             optimizer.zero_grad()
             texts = list(data_batch[0])
             labels = torch.stack(data_batch[1],0).float().to(device)
@@ -213,33 +215,16 @@ def run_train(mr_model,train_data_loader):
             print('train loss={}'.format(loss))
 
         score = my_score(labels_mat_merged, outputs_mat_merged)
-        print('+++++++++train score={}++++++'.format(score))
-        val_score = run_eval(mr_model,val_data_loader)
-        # mr_model.eval()
-        # labels_mat_merged,outputs_mat_merged = None,None
-        # for idx,data_batch in tqdm(enumerate(val_data_loader)):
-        #     with torch.no_grad():
-        #         texts = list(data_batch[0])
-        #         # labels = data_batch[1]
-        #         labels = torch.stack(data_batch[1], 0).float().to(device)
-        #         outputs = mr_model(texts)
-        #         outputs = torch.stack(outputs, 0).squeeze()
-        #         labels_mat = labels.transpose(1,0)
-        #         outputs_mat = outputs.transpose(1,0)
-        #         outputs_mat = outputs_mat.round()
-        #         if idx==0:
-        #             labels_mat_merged = labels_mat
-        #             outputs_mat_merged = outputs_mat
-        #         else:
-        #             labels_mat_merged = torch.cat([labels_mat_merged,labels_mat])
-        #             outputs_mat_merged = torch.cat([outputs_mat_merged,outputs_mat])
-        # score = my_score(labels_mat_merged,outputs_mat_merged)
-        # print('=================')
-        # print('val score={}'.format(score))
+        print('+++++++++train score={} ++++++'.format(score))
+        val_score,_ = run_eval(mr_model,val_data_loader)
+
         if val_score > best_val_score:
-            best_val_score = score
-            print('best model of score {} saved'.format(val_score))
+            best_val_score = val_score
+            best_epoch = epoch
+            print('best model of score {} at epoch {} saved'.format(val_score,epoch))
             torch.save(mr_model.state_dict(),model_path)
+    print('best epoch=',best_epoch)
+    print('best score=',best_val_score)
 
 mr_model = MRModel()
 mr_model.to(device)
@@ -260,4 +245,4 @@ else:
     sub['emotion'] = list(predictions.cpu().numpy())
     sub['emotion'] = sub['emotion'].apply(lambda x: ','.join([str(int(i)) for i in x]))
     sub.head()
-    sub.to_csv('baseline2.tsv', sep='\t', index=False)
+    sub.to_csv('baseline5.tsv', sep='\t', index=False)
