@@ -13,9 +13,9 @@ from transformers import AutoTokenizer, AutoModel
 from torch.utils.data.dataset import Dataset
 from torch.utils.data.dataloader import DataLoader
 from tqdm import tqdm
-is_train = False #True: 训练模型，False:加载模型进行预测
-model_path = 'multi_regression_model.pkl'
-max_epoch = 10
+is_train = True #True: 训练模型，False:加载模型进行预测
+model_path = 'multi_regression_model_qa.pkl'
+max_epoch = 7
 path = os.getcwd()
 device = torch.device('cuda:0') if torch.cuda.is_available() else torch.device('cpu')
 
@@ -39,8 +39,8 @@ print(train.shape)
 train['character'].fillna('无角色', inplace=True)
 test['character'].fillna('无角色', inplace=True)
 
-train['text'] = train['content'].astype(str) + ' 角色: ' + train['character'].astype(str)
-test['text'] = test['content'].astype(str) + ' 角色: ' + test['character'].astype(str)
+train['text'] = train['content'].astype(str)  # + ' 角色: ' + train['character'].astype(str)
+test['text'] = test['content'].astype(str)   #+ ' 角色: ' + test['character'].astype(str)
 train['labels'] = train['emotions'].apply(lambda x: [int(i) for i in x.split(',')])
 
 full_data_shuff = train.sample(frac=1, random_state=42)
@@ -48,28 +48,33 @@ split_pos = int(len(full_data_shuff)*0.8)
 train_data = full_data_shuff.iloc[:split_pos,:]
 val_data = full_data_shuff.iloc[split_pos:,:]
 class MyDataSet(Dataset):
-    def __init__(self,texts,labels=None):
+    def __init__(self,texts,characters,labels=None):
         self.texts = list(texts)
+        self.characters = list(characters)
         if labels is not None:
             self.labels = list(labels)
         else:
             self.labels = None
 
+
+
     def __getitem__(self, index):
         if self.labels is not None:
-            return [self.texts[index],self.labels[index]]
+            return [self.texts[index],self.characters[index],self.labels[index]]
         else:
-            return [self.texts[index]]
+            return [self.texts[index],self.characters[index]]
 
     def __len__(self):
         return len(self.texts)
-train_dataset = MyDataSet(train_data['text'].values,train_data['labels'].values)
+train_dataset = MyDataSet(train_data['text'].values,characters=train_data['character'].values,
+                          labels=train_data['labels'].values)
 train_data_loader = DataLoader(train_dataset,batch_size=32,shuffle=False,num_workers=0)
-val_dataset = MyDataSet(val_data['text'].values,val_data['labels'].values)
+val_dataset = MyDataSet(val_data['text'].values,characters=val_data['character'].values,
+                        labels=val_data['labels'].values)
 val_data_loader = DataLoader(val_dataset,batch_size=32,shuffle=False,num_workers=0)
-test_dataset = MyDataSet(test['text'].values)
+test_dataset = MyDataSet(test['text'].values,characters=test['character'].values)
 test_data_loader = DataLoader(test_dataset,batch_size=32,shuffle=False,num_workers=0)
-best_val_score = 0
+
 def my_score(y_true, y_pred, normalize=True, sample_weight=None):
     error_squre = (y_pred - y_true)**2
     # sum_error_squre_root = np.sqrt(np.sum(error_squre))
@@ -110,8 +115,8 @@ class MRModel(nn.Module):
         one_hot = torch.zeros(index.size(0), class_num).to(index.device).scatter(dim=1,index=index,value=1)
         return one_hot
 
-    def forward(self, texts, label_id_layers=None,is_training=True):
-        X_inputs = self.tokenizer(texts, padding=True, return_tensors='pt', truncation=True, max_length=self.max_length)
+    def forward(self, texts,characters, label_id_layers=None,is_training=True):
+        X_inputs = self.tokenizer(characters,texts, padding=True, return_tensors='pt', truncation=True, max_length=self.max_length)
         X_inputs.to(device)
         x = self.electra_model(X_inputs['input_ids'],
             token_type_ids=X_inputs['token_type_ids'],
@@ -149,11 +154,11 @@ def run_eval(mr_model,val_data_loader,has_label = True):
     for idx, data_batch in tqdm(enumerate(val_data_loader)):
         with torch.no_grad():
             texts = list(data_batch[0])
-            # labels = data_batch[1]
+            characters = data_batch[1]
             if has_label:
-                labels = torch.stack(data_batch[1], 0).float().to(device)
+                labels = torch.stack(data_batch[2], 0).float().to(device)
                 labels_mat = labels.transpose(1, 0)
-            outputs = mr_model(texts)
+            outputs = mr_model(texts,characters)
             outputs = torch.stack(outputs, 0).squeeze()
             outputs_mat = outputs.transpose(1, 0)
             outputs_mat = outputs_mat.round()
@@ -179,17 +184,20 @@ def run_train(mr_model,train_data_loader):
     optimizer = optim.Adam([{'params': base_params},
                             {'params': mr_model.electra_model.parameters(), 'lr': 1e-05}],
                            lr=1e-04)
+    best_epoch = 0
+    best_val_score = 0
     for epoch in range(max_epoch):
         mr_model.train()
-        for idx,data_batch in enumerate(tqdm(train_data_loader)):
+        for idx,data_batch in enumerate(tqdm(train_data_loader,desc='Epochs {}/{}'.format(epoch,max_epoch))):
             optimizer.zero_grad()
             texts = list(data_batch[0])
-            labels = torch.stack(data_batch[1],0).float().to(device)
+            characters = list(data_batch[1])
+            labels = torch.stack(data_batch[2],0).float().to(device)
             # texts = torch.tensor(texts).to(device)
             # labels = labels.to(device)
             # input = trainer.X.to(device)
             # trainer.Y = torch.from_numpy(trainer.Y).to(trainer.device)
-            outputs = mr_model(texts)
+            outputs = mr_model(texts,characters)
             outputs = torch.stack(outputs,0).squeeze()
             loss_layer_0 = mr_model.criterion(outputs[0], labels[0])
             loss_layer_1 = mr_model.criterion(outputs[1], labels[1])
@@ -213,33 +221,16 @@ def run_train(mr_model,train_data_loader):
             print('train loss={}'.format(loss))
 
         score = my_score(labels_mat_merged, outputs_mat_merged)
-        print('+++++++++train score={}++++++'.format(score))
-        val_score = run_eval(mr_model,val_data_loader)
-        # mr_model.eval()
-        # labels_mat_merged,outputs_mat_merged = None,None
-        # for idx,data_batch in tqdm(enumerate(val_data_loader)):
-        #     with torch.no_grad():
-        #         texts = list(data_batch[0])
-        #         # labels = data_batch[1]
-        #         labels = torch.stack(data_batch[1], 0).float().to(device)
-        #         outputs = mr_model(texts)
-        #         outputs = torch.stack(outputs, 0).squeeze()
-        #         labels_mat = labels.transpose(1,0)
-        #         outputs_mat = outputs.transpose(1,0)
-        #         outputs_mat = outputs_mat.round()
-        #         if idx==0:
-        #             labels_mat_merged = labels_mat
-        #             outputs_mat_merged = outputs_mat
-        #         else:
-        #             labels_mat_merged = torch.cat([labels_mat_merged,labels_mat])
-        #             outputs_mat_merged = torch.cat([outputs_mat_merged,outputs_mat])
-        # score = my_score(labels_mat_merged,outputs_mat_merged)
-        # print('=================')
-        # print('val score={}'.format(score))
+        print('+++++++++train score={} ++++++'.format(score))
+        val_score,_ = run_eval(mr_model,val_data_loader)
+
         if val_score > best_val_score:
-            best_val_score = score
-            print('best model of score {} saved'.format(val_score))
+            best_val_score = val_score
+            best_epoch = epoch
+            print('best model of score {} at epoch {} saved'.format(val_score,epoch))
             torch.save(mr_model.state_dict(),model_path)
+    print('best epoch=',best_epoch)
+    print('best score=',best_val_score)
 
 mr_model = MRModel()
 mr_model.to(device)
@@ -260,4 +251,4 @@ else:
     sub['emotion'] = list(predictions.cpu().numpy())
     sub['emotion'] = sub['emotion'].apply(lambda x: ','.join([str(int(i)) for i in x]))
     sub.head()
-    sub.to_csv('baseline2.tsv', sep='\t', index=False)
+    sub.to_csv('baseline_qa1.tsv', sep='\t', index=False)
