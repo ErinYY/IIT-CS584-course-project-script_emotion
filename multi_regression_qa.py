@@ -13,7 +13,7 @@ from transformers import AutoTokenizer, AutoModel
 from torch.utils.data.dataset import Dataset
 from torch.utils.data.dataloader import DataLoader
 from tqdm import tqdm
-is_train = True #True: 训练模型，False:加载模型进行预测
+is_train = False #True: 训练模型，False:加载模型进行预测
 model_path = 'multi_regression_model_qa.pkl'
 max_epoch = 7
 path = os.getcwd()
@@ -148,13 +148,15 @@ class MRModel(nn.Module):
 
 
 
-def run_eval(mr_model,val_data_loader,has_label = True):
+def run_eval(mr_model,val_data_loader,has_label = True,is_train=True):
     mr_model.eval()
-    labels_mat_merged, outputs_mat_merged = None, None
+    texts_all,characters_all,labels_mat_merged, outputs_mat_merged = [],[], None, None
     for idx, data_batch in tqdm(enumerate(val_data_loader)):
         with torch.no_grad():
             texts = list(data_batch[0])
+            texts_all.extend(texts)
             characters = data_batch[1]
+            characters_all.extend(characters)
             if has_label:
                 labels = torch.stack(data_batch[2], 0).float().to(device)
                 labels_mat = labels.transpose(1, 0)
@@ -166,6 +168,7 @@ def run_eval(mr_model,val_data_loader,has_label = True):
                 if has_label:
                     labels_mat_merged = labels_mat
                 outputs_mat_merged = outputs_mat
+
             else:
                 if has_label:
                     labels_mat_merged = torch.cat([labels_mat_merged, labels_mat])
@@ -175,7 +178,14 @@ def run_eval(mr_model,val_data_loader,has_label = True):
         score = my_score(labels_mat_merged, outputs_mat_merged)
         print('=================')
         print('val score={}'.format(score))
-
+        if not is_train: #测试时生成对照结果文件
+            with open('out_file.txt','w',encoding='utf-8') as wf:
+                for i in range(len(texts_all)):
+                    l = str(labels_mat_merged[i].cpu().numpy())
+                    o = str(outputs_mat_merged[i].cpu().numpy())
+                    right_flag = '' if l == o else 'FAIL'
+                    wf.write(characters_all[i]+' '+texts_all[i]+' '+l+right_flag+'\n')
+                    wf.write(characters_all[i]+' '+texts_all[i]+' '+o+right_flag+'\n')
     return score,outputs_mat_merged
 
 def run_train(mr_model,train_data_loader):
@@ -242,7 +252,7 @@ else:
     else:
         model_state = torch.load(model_path, map_location='cpu')
     mr_model.load_state_dict(model_state)
-    val_score,val_pred = run_eval(mr_model,val_data_loader)
+    val_score,val_pred = run_eval(mr_model,val_data_loader,is_train=is_train)
     print('val_score',val_score)
     _, predictions = run_eval(mr_model,test_data_loader,has_label=False)
     sub = submit.copy()
