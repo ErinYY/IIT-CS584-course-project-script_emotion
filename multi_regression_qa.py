@@ -13,9 +13,10 @@ from transformers import AutoTokenizer, AutoModel
 from torch.utils.data.dataset import Dataset
 from torch.utils.data.dataloader import DataLoader
 from tqdm import tqdm
-is_train = False #True: 训练模型，False:加载模型进行预测
+is_train = True #True: 训练模型，False:加载模型进行预测
+uses_full_data = False  #全部数据，含val_data
 model_path = 'multi_regression_model_qa.pkl'
-max_epoch = 7
+max_epoch = 3
 path = os.getcwd()
 device = torch.device('cuda:0') if torch.cuda.is_available() else torch.device('cpu')
 
@@ -45,7 +46,7 @@ train['labels'] = train['emotions'].apply(lambda x: [int(i) for i in x.split(','
 
 full_data_shuff = train.sample(frac=1, random_state=42)
 split_pos = int(len(full_data_shuff)*0.8)
-train_data = full_data_shuff.iloc[:split_pos,:]
+train_data = full_data_shuff if uses_full_data else full_data_shuff.iloc[:split_pos,:]
 val_data = full_data_shuff.iloc[split_pos:,:]
 class MyDataSet(Dataset):
     def __init__(self,texts,characters,labels=None):

@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 import math
 is_train = True #True: 训练模型，False:加载模型进行预测
-
+uses_full_data = False  #全部数据，含val_data
 
 from simpletransformers.classification import (
     MultiLabelClassificationModel, MultiLabelClassificationArgs,ClassificationModel,ClassificationArgs
@@ -67,7 +67,7 @@ print(full_data.head())
 
 full_data_shuff = full_data.sample(frac=1, random_state=42)
 split_pos = int(len(full_data_shuff)*0.8)
-train_data = full_data_shuff.iloc[:split_pos,:]
+train_data = full_data_shuff if uses_full_data else full_data_shuff.iloc[:split_pos,:]
 val_data = full_data_shuff.iloc[split_pos:,:]
 print(train_data.head())
 # train_dfs = []
@@ -88,7 +88,7 @@ print(train_data.head())
 model_args = MultiLabelClassificationArgs()
 # model_args = ClassificationArgs()
 model_args.max_seq_length = 128
-model_args.num_train_epochs = 1
+model_args.num_train_epochs = 2
 model_args.no_save = False
 model_args.save_model_every_epoch = True
 model_args.save_steps = -1
@@ -125,7 +125,7 @@ if is_train:
 pred_outputs = model.predict(list(val_data['text'].values))
 pred_outputs = pred_outputs[0]
 score = my_score(np.array(list(val_data['labels'].values)),np.array(pred_outputs))
-print(score)
+print('val score:',score)
 # round_vec = np.vectorize(round)
 # pred_outputs_int.append(round_vec(pred_outputs))
 # scores.append(score)

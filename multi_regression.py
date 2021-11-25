@@ -13,7 +13,8 @@ from transformers import AutoTokenizer, AutoModel
 from torch.utils.data.dataset import Dataset
 from torch.utils.data.dataloader import DataLoader
 from tqdm import tqdm
-is_train = False #True: 训练模型，False:加载模型进行预测
+is_train = True #True: 训练模型，False:加载模型进行预测
+uses_full_data = False  #全部数据，含val_data
 model_path = 'multi_regression_model.pkl'
 max_epoch = 2
 path = os.getcwd()
@@ -45,7 +46,7 @@ train['labels'] = train['emotions'].apply(lambda x: [int(i) for i in x.split(','
 
 full_data_shuff = train.sample(frac=1, random_state=42)
 split_pos = int(len(full_data_shuff)*0.8)
-train_data = full_data_shuff.iloc[:split_pos,:]
+train_data = full_data_shuff if uses_full_data else full_data_shuff.iloc[:split_pos,:]
 val_data = full_data_shuff.iloc[split_pos:,:]
 class MyDataSet(Dataset):
     def __init__(self,texts,labels=None):
@@ -63,7 +64,7 @@ class MyDataSet(Dataset):
 
     def __len__(self):
         return len(self.texts)
-train_dataset = MyDataSet(full_data_shuff['text'].values,full_data_shuff['labels'].values) #全部数据，含val_data
+train_dataset = MyDataSet(train_data['text'].values,train_data['labels'].values)
 train_data_loader = DataLoader(train_dataset,batch_size=32,shuffle=False,num_workers=0)
 val_dataset = MyDataSet(val_data['text'].values,val_data['labels'].values)
 val_data_loader = DataLoader(val_dataset,batch_size=32,shuffle=False,num_workers=0)
