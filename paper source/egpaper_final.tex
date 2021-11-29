@@ -42,7 +42,7 @@ Illinois Institute of Technology\\
 
 %%%%%%%%% ABSTRACT
 \begin{abstract}
-This task is to analyze and identify the emotions of each character involved in every dialogue and action description in the script scenes from multiple dimensions. Comparing with traditional sentimental classification task, this task has its own characteristics and challenges. Emotions are multidimensional including 6 different types: love,joy,anger,surprise,fear,sorrow. And each emotion has a degree. For example, the degree of happiness ranges from 0 to 3, with 0 being none and 3 being the strongest.  Emotion classification is for a certain role in a sentence, rather than the whole sentence. A sentence may have multiple roles.  Considering the property of the task, we tried methods. We use the existing python package simpletransformers multilableclassifier to implement the baseline model and build 3 improved models with pytorch. The experiment result shows that our improved models overcome the limitations of the existing package and makes significant improvement in the RMSE score comparing to the baseline model.
+This task is to analyze and identify the emotions of each character involved in every dialogue and action description in the script scenes from multiple dimensions. Comparing with traditional sentimental classification task, this task has its own characteristics and challenges. Emotions are multidimensional including 6 different types: love,joy,anger,surprise,fear,sorrow. And each emotion has a degree. For example, the degree of happiness ranges from 0 to 3, with 0 being none and 3 being the strongest.  Emotion classification is for a certain role in a sentence, rather than the whole sentence. A sentence may have multiple roles.  Considering the property of the task, we tried methods. We use the existing python package simpletransformers multilableclassifier to implement the baseline model and build 3 improved models with pytorch. The experiment result shows that our improved models overcome the limitations of the existing package and makes significant improvement in the RMSE score comparing to the baseline model.Our code is available at github \footnote{https://github.com/tujianhua/script\_emotion}
 \end{abstract}
 
 %%%%%%%%% BODY TEXT
@@ -194,19 +194,18 @@ Fine-tuning technique is also adopted. we train BERT parameters together with th
 
 
 
-On the basis of Method 3, we introduce historical text. Due to the limited time, we only introduce the two previous sentences, and simply merge the previous two sentences with the current sentence to get a longer text. In order to reference the historical text, we pre-process the data. We extract all the script text ,remove duplicates of it and sort text by the order of script id,scene it and sentence id and we generate a script text list. We give an new id "content\_id" to the unique script text and associate the unique content\_id to the every single data. During training phase or inference phase, we find the content\_id of the original training data and test data, and then take the three corresponding texts of content\_id-2,content\_id-1 and content_id from the script text list and merge them into one large text in sequence. 
+On the basis of Method 3, we introduce historical text. Due to the limited time, we only introduce the two previous sentences, and simply merge the previous two sentences with the current sentence to get a longer text. In order to reference the historical text, we pre-process the data. We extract all the script text ,remove duplicates of it and sort text by the order of script id,scene it and sentence id and we generate a script text list. We give an new id "content\_id" to the unique script text and associate the unique content\_id to the every single data. During training phase or inference phase, we find the content\_id of the original training data and test data, and then take the three corresponding texts of content\_id-2,content\_id-1 and content\_id from the script text list and merge them into one large text in sequence. 
 In this way, we use historical text information to predict the character emotion of the current text. Since the text length of the model cannot be increased indefinitely, we only quote previous 2 sentences for the time being. 
 
 
 
 \subsection{Results}
-Table 1 shows the performance results for different models. The formulation to calculate the score is discussed in section Performance measure metric. The baseline model gets the lowest score,improved model 1 gains the improvement of  0.005 on the validation dataset and slight improvement on test dataset. Improved Model 2 gains 0.0023 more on the validation dataset and 0.0026 more on the test dataset. Improved Model 3 gets the highest score on both datasets,0.6907 and 0.6864 which are 0.012 and 0.005 higher comparing to baseline model respectively. This shows that our improved methods are working. 
 
-\begin{table}
+\begin{table*}
 \begin{center}
 \begin{tabular}{|c|c|c|}
 \hline
-Name & Validation  & Test\\
+Name & Validation dataset  & Test dataset\\
 \hline 
 Baseline Model & 0.6787 & 0.6814\\
 \hline 
@@ -219,15 +218,18 @@ Improved Model (2) & 0.6860 & 0.6842\\
 \end{tabular}
 \end{center}
 \caption{scores of different models on validation dataset and test dataset}
-\end{table}
+\end{table*}
+Table 1 shows the performance results for different models. The formulation to calculate the score is discussed in section Performance measure metric. The baseline model gets the lowest score,improved model 1 gains the improvement of  0.005 on the validation dataset and slight improvement on test dataset. Improved Model 2 gains 0.0023 more on the validation dataset and 0.0026 more on the test dataset. Improved Model 3 gets the highest score on both datasets,0.6907 and 0.6864 which are 0.012 and 0.005 higher comparing to baseline model respectively. This shows that our improved methods are working. 
+
+
 
 %---------------------------------------------
 
 \section{Future work}
-In the future, we plan to add a attention layer. After obtaining Bert sentence vectors for several sentences, they will be sent to the attention layer and the role vector for attention calculation to obtain sentence representations for longer texts, and then the output will be used for emotional value prediction. 
+ Currently we feed the text into BERT directly,but BERT can't receive too long text. The max length of text of BERT is 512, but we our max length is 300 in other wise out of GPU memory would occur.  In the future, we plan to try adding an attention layer between the fully connected network and BERT. In stead of merging the all sentences into one longer text,we extract every sentence's BERT vector and feed them to the attention layer.  In this way, we can make use of more historic sentence to predict the emotion.
 
 \section{Conclusion}
-
+We studied the film script emotion recognition problem which is more challenging than previous sentiment analysis or multi-label emotion analysis, we proposed baseline model using an existing python package simpletransformers and 3 improved methods which gain better performance. First method supports multi-label multi-classification that the existing package doesn't support. We further propose that using regression (later converting the float output into integer output) instead of classification to classify numeric values. In the second method, we input the script character and script text separately to avoid the model ignore the importance of script character. In the third method we make use of the historic sentences. Every method can improve the scores in both validation dataset and test dataset significantly. 
 %-------------------------------------------------------------------------
 
    \makeatletter
