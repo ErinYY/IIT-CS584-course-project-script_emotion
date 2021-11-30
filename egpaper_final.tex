@@ -124,7 +124,10 @@ The method is described as below:
 \item Convert labels with probability greater than 0.5 to 1, and labels with probability less than or equal to 0.5 to 0. 
 \end{enumerate}
 \item The loss function adopts binary cross-entropy.  
-
+\begin{enumerate}
+\item The loss function we use here is two-class cross entropy, and the final output label is expressed as {0,1}, so the loss function is
+$$L=-ylog\hat{y}-(1-y)log(1-\hat{y})$$
+\end{enumerate}
 \item The flaws of Method 1:
 \begin{enumerate}
 
