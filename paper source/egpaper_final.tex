@@ -157,8 +157,8 @@ We implemented the baseline version using the simplest way by calling the existi
  
  Finally,convert output with probability greater than 0.5 to label 1, and convert output with probability less than or equal to 0.5 to 0. 
 
-The loss function adopts binary cross-entropy in training phase, and the fomula is
-$$L=-ylog\hat{y}-(1-y)log(1-\hat{y})$$
+The loss function adopts binary cross-entropy in training phase, and the formula is
+$$L(f)=\Sigma_{n}-[\hat{y}^nlnf(x^n)+(1-\hat{y}^n)ln(1-f(x^n))]\eqno{3.1}$$
 
 We choose the hyper-parameter max-epoch as 2, the default value for all other hyper-parameters. 
 
@@ -184,7 +184,9 @@ Therefore, based on the above analysis, we gradually made improvements, thus gra
 \label{fig:short}
 \end{figure}
 
-Figure 6 shows the architecture of the improved model 1. We modify the output parts and keep the other parts unchanged.Different from baseline model, We adopt multiple output blocks, one emotion corresponds to one output block, and there are two layer fully-connected network inside each output block. The output dimension of the last layer is 1, without adding any activation function, using MSE as the loss function.  The resulting logit is a float number, and we round logit to get integers in the range of [0,1,2,3]. The emotional values of the six emotions correspond to the integral values of the six output blocks. Since there are multiple output blocks, the total loss of the model is the summation of the losses of all outputs.  It's actually a multitasking approach to learning. Each task is to identify one of the emotions, but share sentence vectors. Fine-tuning technique is also adopted. We train BERT parameters together with the output blocks,but with different learning rates. We choose output blocks learning rate 1e-04 and BERT learning rate 1e-05.
+Figure 6 shows the architecture of the improved model 1. We modify the output parts and keep the other parts unchanged.Different from baseline model, We adopt multiple output blocks, one emotion corresponds to one output block, and there are two layer fully-connected network inside each output block. The output dimension of the last layer is 1, without adding any activation function, using MSE as the loss function.
+$$L(f)=\frac{1}{2}\Sigma_{n}(f(x^n)-\hat{y}^n)^2\eqno{3.2}$$
+The resulting logit is a float number, and we round logit to get integers in the range of [0,1,2,3]. The emotional values of the six emotions correspond to the integral values of the six output blocks. Since there are multiple output blocks, the total loss of the model is the summation of the losses of all outputs.  It's actually a multitasking approach to learning. Each task is to identify one of the emotions, but share sentence vectors. Fine-tuning technique is also adopted. We train BERT parameters together with the output blocks,but with different learning rates. We choose output blocks learning rate 1e-04 and BERT learning rate 1e-05.
 \subsubsection{Improved Model 2}
 %\item Method 3
 \begin{figure}
