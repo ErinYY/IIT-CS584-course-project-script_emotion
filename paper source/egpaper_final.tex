@@ -63,9 +63,9 @@ Compared with traditional sentiment analysis,an on-going competition task\footno
 \subsection{Performance measure metric}
 The performance of the algorithm is measured by the common used root mean square error. Error is calculated according to every emotion value identified by the combination of text content plus character name.
 
-$$R M S E=\sqrt{\frac{\sum_{i=1}^{n} \sum_{j=1}^{6}\left(y_{i, j}-x_{i, j}\right)^{2}}{6 n}}\eqno{1.1}$$
+$$R M S E=\sqrt{\frac{\sum_{i=1}^{n} \sum_{j=1}^{6}\left(y_{i, j}-x_{i, j}\right)^{2}}{6 n}}\eqno{(1.1)}$$
 
-$$score = 1/(1 + RMSE)\eqno{1.2}$$
+$$score = 1/(1 + RMSE)\eqno{(1.2)}$$
 
 Where $y_{i,j}$ is the predicted emotion value for the ith data sample and jth emotion type, $x_{i,j}$ are the labeled emotion value for the ith data sample and jth emotion type, and n is the total number of test samples.  
 The final ranking is based on score. 
@@ -158,7 +158,7 @@ We implemented the baseline version using the simplest way by calling the existi
  Finally,convert output with probability greater than 0.5 to label 1, and convert output with probability less than or equal to 0.5 to 0. 
 
 The loss function adopts binary cross-entropy in training phase, and the formula is
-$$L(f)=\Sigma_{n}-[\hat{y}^nlnf(x^n)+(1-\hat{y}^n)ln(1-f(x^n))]\eqno{3.1}$$
+$$L(f)=\Sigma_{n}-[\hat{y}^nlnf(x^n)+(1-\hat{y}^n)ln(1-f(x^n))]\eqno{(3.1)}$$
 
 We choose the hyper-parameter max-epoch as 2, the default value for all other hyper-parameters. 
 
@@ -184,10 +184,12 @@ Therefore, based on the above analysis, we gradually made improvements, thus gra
 \label{fig:short}
 \end{figure}
 
-Figure 6 shows the architecture of the improved model 1. We modify the output parts and keep the other parts unchanged.Different from baseline model, We adopt multiple output blocks, one emotion corresponds to one output block, and there are two layer fully-connected network inside each output block. The output dimension of the last layer is 1, without adding any activation function, using MSE as the loss function.
-$$L(f)=\frac{1}{2}\Sigma_{n}(f(x^n)-\hat{y}^n)^2\eqno{3.2}$$
-$$L(f)_{total}=\frac{1}{6}\Sigma_{block}(L(f)^{block})\eqno{3.3}$$
-The resulting logit is a float number, and we round logit to get integers in the range of [0,1,2,3]. The emotional values of the six emotions correspond to the integral values of the six output blocks. Since there are multiple output blocks, the total loss of the model is the summation of the losses of all outputs.  It's actually a multitasking approach to learning. Each task is to identify one of the emotions, but share sentence vectors. Fine-tuning technique is also adopted. We train BERT parameters together with the output blocks,but with different learning rates. We choose output blocks learning rate 1e-04 and BERT learning rate 1e-05.
+Figure 6 shows the architecture of the improved model 1. We modify the output parts and keep the other parts unchanged.Different from baseline model, We adopt multiple output blocks, one emotion corresponds to one output block, and there are two layer fully-connected network inside each output block. The output dimension of the last layer is 1, without adding any activation function, using MSE as the loss function(equation 3.2).
+$$L(f)=\frac{1}{2}\sum_{n}(f(x^n)-\hat{y}^n)^2\eqno{(3.2)}$$
+The logit, namely the output of f(x), is a float number, and we round the logit to get an integer in the range of [0,1,2,3]. $$y^n=round(f(x^n))\eqno{(3.3)}$$
+The emotional values of the six emotions correspond to the integral values of the six output blocks. Since there are multiple output blocks, the total loss of the model is the summation of the losses of all outputs as shown in equation (3.4). $$L(f)_{total}=\frac{1}{6}\sum_{block=1}^{6}(L(f)^{block})\eqno{(3.4)}$$
+ It's actually a multitasking approach to learning. Each task is to identify one of the emotions, but share sentence vectors. Fine-tuning technique is also adopted. We train BERT parameters together with the output blocks,but with different learning rates. We choose output blocks learning rate 1e-04 and BERT learning rate 1e-05.
+
 \subsubsection{Improved Model 2}
 %\item Method 3
 \begin{figure}
@@ -207,8 +209,9 @@ The resulting logit is a float number, and we round logit to get integers in the
 \begin{center}
 \begin{tabular}{|c|c|c|}
 \hline
-Name & Validation dataset  & Test dataset\\
+model & Validation dataset  & Test dataset\\
 \hline 
+\hline
 Baseline Model & 0.6787 & 0.6814\\
 \hline 
 Improved Model (1) & 0.6837 & 0.6816\\
@@ -219,7 +222,7 @@ Improved Model (2) & 0.6860 & 0.6842\\
 \hline 
 \end{tabular}
 \end{center}
-\caption{scores of different models on validation dataset and test dataset}
+\caption{scores of different models on validation dataset and test dataset, the score is calculated with equation (1.1) and equation (1.2)}
 \end{table*}
 
 
