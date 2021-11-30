@@ -1,4 +1,4 @@
-\documentclass[10pt,twocolumn,letterpaper]{article}
+\documentclass[12pt,twocolumn,letterpaper]{article}
 
 \usepackage{cvpr}
 \usepackage{times}
@@ -7,39 +7,37 @@
 \usepackage{amsmath}
 \usepackage{amssymb}
 
+
 % Include other packages here, before hyperref.
 
 % If you comment hyperref and then uncomment it, you should delete
 % egpaper.aux before re-running latex.  (Or just hit 'q' on the first latex
 % run, let it finish, and you should be clear).
-\usepackage[pagebackref=true,breaklinks=true,letterpaper=true,colorlinks,bookmarks=false]{hyperref}
+\usepackage[breaklinks=true,bookmarks=false]{hyperref}
 
-% \cvprfinalcopy % *** Uncomment this line for the final submission
+\cvprfinalcopy % *** Uncomment this line for the final submission
 
 \def\cvprPaperID{****} % *** Enter the CVPR Paper ID here
 \def\httilde{\mbox{\tt\raisebox{-.5ex}{\symbol{126}}}}
 
 % Pages are numbered in submission mode, and unnumbered in camera-ready
-\ifcvprfinal\pagestyle{empty}\fi
+%\ifcvprfinal\pagestyle{empty}\fi
+\setcounter{page}{1}
 \begin{document}
 
 %%%%%%%%% TITLE
-\title{\LaTeX\ Author Guidelines for CVPR Proceedings}
+\title{Script Character Emotion Recognition}
 
-\author{First Author\\
-Institution1\\
-Institution1 address\\
-{\tt\small firstauthor@i1.org}
+\author{Jianhua Tu (A20480216)\\
+\and Biao Sun (A20475197)\\
+\and Ye Yu (A20478640)\\
+Illinois Institute of Technology\\ 
+\{jtu5,bsun27,yy99\}@hawk.iit.edu
 % For a paper whose authors are all at the same institution,
 % omit the following lines up until the closing ``}''.
 % Additional authors and addresses can be added with ``\and'',
 % just like the second author.
 % To save space, use either the email address or home page, not both
-\and
-Second Author\\
-Institution2\\
-First line of institution2 address\\
-{\tt\small secondauthor@i2.org}
 }
 
 \maketitle
@@ -47,385 +45,207 @@ First line of institution2 address\\
 
 %%%%%%%%% ABSTRACT
 \begin{abstract}
-   The ABSTRACT is to be in fully-justified italicized text, at the top
-   of the left-hand column, below the author and affiliation
-   information. Use the word ``Abstract'' as the title, in 12-point
-   Times, boldface type, centered relative to the column, initially
-   capitalized. The abstract is to be in 10-point, single-spaced type.
-   Leave two blank lines after the Abstract, then begin the main text.
-   Look at previous CVPR abstracts to get a feel for style and length.
+This task is to analyze and identify the emotions of each character involved in every dialogue and action description in the script scenes from multiple dimensions. Comparing with traditional sentimental classification task, this task has its own characteristics and challenges. Emotions are multidimensional including 6 different types: love,joy,anger,surprise,fear,sorrow. And each emotion has a degree. For example, the degree of happiness ranges from 0 to 3, with 0 being none and 3 being the strongest.  Emotion classification is for a certain role in a sentence, rather than the whole sentence. A sentence may have multiple characters.  Considering the property of the task, we tried quite a few methods. We use the existing python package simpletransformers multilableclassifier to implement the baseline model and build 3 improved models with pytorch. The experiment result shows that our improved models overcome the limitations of the existing package and makes significant improvement in the RMSE score comparing to the baseline model.Our code is available at github \footnote{https://github.com/tujianhua/script\_emotion}
 \end{abstract}
 
 %%%%%%%%% BODY TEXT
 \section{Introduction}
+Since early 2000,sentiment analysis has grown to be one of the most active research areas in NLP,because people’s opinions are central to almost all human activities and behaviours, and hence sentiment analysis is very import to business and society. 
+Sentiment analysis is usually formulated as a multi-category classification problem, namely, to predict a text as positive, neural, and negative, or binary classification problem, positive and negative
+There are also some studies on multi-label emotion analysis(\cite{Ref2}),because fine-grained emotions are required to be analyzed, and some dataset on the fine-grained emotions are published(\cite{Ref1}).
+The difference between multi-label classification and multi-label classification lies in:  
+\begin{enumerate}
+\item Multi-label classification refers to the classification of multiple aspects or targets of a sample, usually for each aspect it is binary classification, having only two categories. These aspects are not mutually exclusive. For example, for a sample image of a person, to classify into male or female in terms of gender, adult or child in terms of age. These aspects of the image can occur simultaneously,because a person has both gender and age properties.  
+\item Multi-classification problem is to tell which category a sample belongs to, the value of category is more than 2. These categories are mutually exclusive meaning that if a sample belongs to category 1, it cannot belong to category 2 or category 3. For example, the task of face recognition is to classify faces into different people's faces,if it is person A's face, it couldn't be person B's face in the mean time.  
+\end{enumerate}
 
-Please follow the steps outlined below when submitting your manuscript to
-the IEEE Computer Society Press.  This style guide now has several
-important modifications (for example, you are no longer warned against the
-use of sticky tape to attach your artwork to the paper), so all authors
-should read this new version.
+\subsection{Problem description}
+Comparison with traditional sentiment analysis,an on-going competition task\footnote{https://www.datafountain.cn/competitions/518}, the script character emotion recognition is a new area of research and is more challenging. The importance of script to film and television industry is self-evident. A good script is not only the basis of good word of mouth and traffic, but also can bring higher commercial returns. Script analysis is the first link in the production chain of film and television content, in which the emotion identification of script characters is a very important task, which is mainly to analyze and identify the emotions of each character involved in every dialogue and action description in the script from multiple dimensions. Compared with the usual news and commentary text sentiment analysis, it has its unique business characteristics and challenges. Usual news and commentary text sentiment analysis is to predict the polarity which usually has two classes:positive,negative or three classes: positive, neutral and negative, and this is a binary classification or 3 class multi-classification problem. While this task is much more complicated, it requires identify the emotion for different characters or roles mentioned in the script text, and furthermore, it requires to identify the emotion type and intensity degree of each emotion. The emotion depends on not only current text but also on the historic texts.
 
-%-------------------------------------------------------------------------
-\subsection{Language}
+\subsection{Performance measure metric}
+The performance of the algorithm is measured by the common used root mean square error. Error is calculated according to every emotion value identified by the combination of text content plus character name.
 
-All manuscripts must be in English.
+$R M S E=\sqrt{\frac{\sum_{i=1}^{n} \sum_{j=1}^{6}\left(y_{i, j}-x_{i, j}\right)^{2}}{6 n}}$\\
 
-\subsection{Dual submission}
+score = 1/(1 + RMSE)\\
 
-Please refer to the author guidelines on the CVPR 2018 web page for a
-discussion of the policy on dual submissions.
+Where $y_{i,j}$ is the predicted emotion value for the ith data sample and jth emotion type, $x_{i,j}$ are the labeled emotion value for the ith data sample and jth emotion type, and n is the total number of test samples.  
+The final ranking is based on score. 
+\section{Related work}
+Existing research has produced numerous techniques for various tasks of sentiment analysis, which include SVM,Maximum Entropy,Naïve Bayes and Neural Network(\cite{Ref3}). The features of the text are very important for sentiment analysis. There are many works(\cite{Ref6}) on how to explore the features in order to improve the performance. Bag of word, tfidf, emotion vocabulary, special lexicon are frequently used.  
 
-\subsection{Paper length}
-Papers, excluding the references section,
-must be no longer than eight pages in length. The references section
-will not be included in the page count, and there is no limit on the
-length of the references section. For example, a paper of eight pages
-with two pages of references would have a total length of 10 pages.
-{\bf There will be no extra page charges for CVPR 2018.}
+In recent years, Bert and its variants produced state-of-the-art results in many NLP application including the sentence pair classification task,single sentence classification task, question answering task, sequence labeling task. Using pre-trained BERT embedding for a single text or texts pair and fine-tuning it in a specific task becomes popular in NLP, because it transfers the general knowledge learnt in large scale corpus into the specific task and often gets good performance. BERT is based on transformer(\cite{ref5}) architecture whose major idea is adopting attention mechanism.The paper of BERT (\cite{Ref4}) provides the usage of BERT for the downstream tasks as shown in Figure 1.
 
-Overlength papers will simply not be reviewed.  This includes papers
-where the margins and formatting are deemed to have been significantly
-altered from those laid down by this style guide.  Note that this
-\LaTeX\ guide already sets figure captions and references in a smaller font.
-The reason such papers will not be reviewed is that there is no provision for
-supervised revisions of manuscripts.  The reviewing process cannot determine
-the suitability of the paper for presentation in eight pages if it is
-reviewed in eleven.  
-
-%-------------------------------------------------------------------------
-\subsection{The ruler}
-The \LaTeX\ style defines a printed ruler which should be present in the
-version submitted for review.  The ruler is provided in order that
-reviewers may comment on particular lines in the paper without
-circumlocution.  If you are preparing a document using a non-\LaTeX\
-document preparation system, please arrange for an equivalent ruler to
-appear on the final output pages.  The presence or absence of the ruler
-should not change the appearance of any other content on the page.  The
-camera ready copy should not contain a ruler. (\LaTeX\ users may uncomment
-the \verb'\cvprfinalcopy' command in the document preamble.)  Reviewers:
-note that the ruler measurements do not align well with lines in the paper
---- this turns out to be very difficult to do well when the paper contains
-many figures and equations, and, when done, looks ugly.  Just use fractional
-references (e.g.\ this line is $095.5$), although in most cases one would
-expect that the approximate location will be adequate.
-
-\subsection{Mathematics}
-
-Please number all of your sections and displayed equations.  It is
-important for readers to be able to refer to any particular equation.  Just
-because you didn't refer to it in the text doesn't mean some future reader
-might not need to refer to it.  It is cumbersome to have to use
-circumlocutions like ``the equation second from the top of page 3 column
-1''.  (Note that the ruler will not be present in the final copy, so is not
-an alternative to equation numbers).  All authors will benefit from reading
-Mermin's description of how to write mathematics:
-\url{http://www.pamitc.org/documents/mermin.pdf}.
-
-
-\subsection{Blind review}
-
-Many authors misunderstand the concept of anonymizing for blind
-review.  Blind review does not mean that one must remove
-citations to one's own work---in fact it is often impossible to
-review a paper unless the previous citations are known and
-available.
-
-Blind review means that you do not use the words ``my'' or ``our''
-when citing previous work.  That is all.  (But see below for
-techreports.)
-
-Saying ``this builds on the work of Lucy Smith [1]'' does not say
-that you are Lucy Smith; it says that you are building on her
-work.  If you are Smith and Jones, do not say ``as we show in
-[7]'', say ``as Smith and Jones show in [7]'' and at the end of the
-paper, include reference 7 as you would any other cited work.
-
-An example of a bad paper just asking to be rejected:
-\begin{quote}
-\begin{center}
-    An analysis of the frobnicatable foo filter.
-\end{center}
-
-   In this paper we present a performance analysis of our
-   previous paper [1], and show it to be inferior to all
-   previously known methods.  Why the previous paper was
-   accepted without this analysis is beyond me.
-
-   [1] Removed for blind review
-\end{quote}
-
-
-An example of an acceptable paper:
-
-\begin{quote}
-\begin{center}
-     An analysis of the frobnicatable foo filter.
-\end{center}
-
-   In this paper we present a performance analysis of the
-   paper of Smith \etal [1], and show it to be inferior to
-   all previously known methods.  Why the previous paper
-   was accepted without this analysis is beyond me.
-
-   [1] Smith, L and Jones, C. ``The frobnicatable foo
-   filter, a fundamental contribution to human knowledge''.
-   Nature 381(12), 1-213.
-\end{quote}
-
-If you are making a submission to another conference at the same time,
-which covers similar or overlapping material, you may need to refer to that
-submission in order to explain the differences, just as you would if you
-had previously published related work.  In such cases, include the
-anonymized parallel submission~\cite{Authors14} as additional material and
-cite it as
-\begin{quote}
-[1] Authors. ``The frobnicatable foo filter'', F\&G 2014 Submission ID 324,
-Supplied as additional material {\tt fg324.pdf}.
-\end{quote}
-
-Finally, you may feel you need to tell the reader that more details can be
-found elsewhere, and refer them to a technical report.  For conference
-submissions, the paper must stand on its own, and not {\em require} the
-reviewer to go to a techreport for further details.  Thus, you may say in
-the body of the paper ``further details may be found
-in~\cite{Authors14b}''.  Then submit the techreport as additional material.
-Again, you may not assume the reviewers will read this material.
-
-Sometimes your paper is about a problem which you tested using a tool which
-is widely known to be restricted to a single institution.  For example,
-let's say it's 1969, you have solved a key problem on the Apollo lander,
-and you believe that the CVPR70 audience would like to hear about your
-solution.  The work is a development of your celebrated 1968 paper entitled
-``Zero-g frobnication: How being the only people in the world with access to
-the Apollo lander source code makes us a wow at parties'', by Zeus \etal.
-
-You can handle this paper like any other.  Don't write ``We show how to
-improve our previous work [Anonymous, 1968].  This time we tested the
-algorithm on a lunar lander [name of lander removed for blind review]''.
-That would be silly, and would immediately identify the authors. Instead
-write the following:
-\begin{quotation}
-\noindent
-   We describe a system for zero-g frobnication.  This
-   system is new because it handles the following cases:
-   A, B.  Previous systems [Zeus et al. 1968] didn't
-   handle case B properly.  Ours handles it by including
-   a foo term in the bar integral.
-
-   ...
-
-   The proposed system was integrated with the Apollo
-   lunar lander, and went all the way to the moon, don't
-   you know.  It displayed the following behaviours
-   which show how well we solved cases A and B: ...
-\end{quotation}
-As you can see, the above text follows standard scientific convention,
-reads better than the first version, and does not explicitly name you as
-the authors.  A reviewer might think it likely that the new paper was
-written by Zeus \etal, but cannot make any decision based on that guess.
-He or she would have to be sure that no other authors could have been
-contracted to solve problem B.
-
-FAQ: Are acknowledgements OK?  No.  Leave them for the final copy.
-
-
-\begin{figure}[t]
-\begin{center}
-\fbox{\rule{0pt}{2in} \rule{0.9\linewidth}{0pt}}
-   %\includegraphics[width=0.8\linewidth]{egfigure.eps}
-\end{center}
-   \caption{Example of caption.  It is set in Roman so that mathematics
-   (always set in Roman: $B \sin A = A \sin B$) may be included without an
-   ugly clash.}
-\label{fig:long}
-\label{fig:onecol}
-\end{figure}
-
-\subsection{Miscellaneous}
-
-\noindent
-Compare the following:\\
-\begin{tabular}{ll}
- \verb'$conf_a$' &  $conf_a$ \\
- \verb'$\mathit{conf}_a$' & $\mathit{conf}_a$
-\end{tabular}\\
-See The \TeX book, p165.
-
-The space after \eg, meaning ``for example'', should not be a
-sentence-ending space. So \eg is correct, {\em e.g.} is not.  The provided
-\verb'\eg' macro takes care of this.
-
-When citing a multi-author paper, you may save space by using ``et alia'',
-shortened to ``\etal'' (not ``{\em et.\ al.}'' as ``{\em et}'' is a complete word.)
-However, use it only when there are three or more authors.  Thus, the
-following is correct: ``
-   Frobnication has been trendy lately.
-   It was introduced by Alpher~\cite{Alpher02}, and subsequently developed by
-   Alpher and Fotheringham-Smythe~\cite{Alpher03}, and Alpher \etal~\cite{Alpher04}.''
-
-This is incorrect: ``... subsequently developed by Alpher \etal~\cite{Alpher03} ...''
-because reference~\cite{Alpher03} has just two authors.  If you use the
-\verb'\etal' macro provided, then you need not worry about double periods
-when used at the end of a sentence as in Alpher \etal.
-
-For this citation style, keep multiple citations in numerical (not
-chronological) order, so prefer \cite{Alpher03,Alpher02,Authors14} to
-\cite{Alpher02,Alpher03,Authors14}.
 
 
 \begin{figure*}
 \begin{center}
-\fbox{\rule{0pt}{2in} \rule{.9\linewidth}{0pt}}
+%\fbox{\rule{0pt}{2in} \rule{.9\linewidth}{0pt}}
+\includegraphics[scale=0.9]{bert_all.png}
 \end{center}
-   \caption{Example of a short caption, which should be centered.}
+   \caption{usage of BERT for different downstream tasks.}
 \label{fig:short}
 \end{figure*}
 
-%------------------------------------------------------------------------
-\section{Formatting your paper}
 
-All text must be in a two-column format. The total allowable width of the
-text area is $6\frac78$ inches (17.5 cm) wide by $8\frac78$ inches (22.54
-cm) high. Columns are to be $3\frac14$ inches (8.25 cm) wide, with a
-$\frac{5}{16}$ inch (0.8 cm) space between them. The main title (on the
-first page) should begin 1.0 inch (2.54 cm) from the top edge of the
-page. The second and following pages should begin 1.0 inch (2.54 cm) from
-the top edge. On all pages, the bottom margin should be 1-1/8 inches (2.86
-cm) from the bottom edge of the page for $8.5 \times 11$-inch paper; for A4
-paper, approximately 1-5/8 inches (4.13 cm) from the bottom edge of the
-page.
+ 
 
-%-------------------------------------------------------------------------
-\subsection{Margins and page numbering}
-
-All printed material, including text, illustrations, and charts, must be kept
-within a print area 6-7/8 inches (17.5 cm) wide by 8-7/8 inches (22.54 cm)
-high.
-
-
-
-%-------------------------------------------------------------------------
-\subsection{Type-style and fonts}
-
-Wherever Times is specified, Times Roman may also be used. If neither is
-available on your word processor, please use the font closest in
-appearance to Times to which you have access.
-
-MAIN TITLE. Center the title 1-3/8 inches (3.49 cm) from the top edge of
-the first page. The title should be in Times 14-point, boldface type.
-Capitalize the first letter of nouns, pronouns, verbs, adjectives, and
-adverbs; do not capitalize articles, coordinate conjunctions, or
-prepositions (unless the title begins with such a word). Leave two blank
-lines after the title.
-
-AUTHOR NAME(s) and AFFILIATION(s) are to be centered beneath the title
-and printed in Times 12-point, non-boldface type. This information is to
-be followed by two blank lines.
-
-The ABSTRACT and MAIN TEXT are to be in a two-column format.
-
-MAIN TEXT. Type main text in 10-point Times, single-spaced. Do NOT use
-double-spacing. All paragraphs should be indented 1 pica (approx. 1/6
-inch or 0.422 cm). Make sure your text is fully justified---that is,
-flush left and flush right. Please do not place any additional blank
-lines between paragraphs.
-
-Figure and table captions should be 9-point Roman type as in
-Figures~\ref{fig:onecol} and~\ref{fig:short}.  Short captions should be centred.
-
-\noindent Callouts should be 9-point Helvetica, non-boldface type.
-Initially capitalize only the first word of section titles and first-,
-second-, and third-order headings.
-
-FIRST-ORDER HEADINGS. (For example, {\large \bf 1. Introduction})
-should be Times 12-point boldface, initially capitalized, flush left,
-with one blank line before, and one blank line after.
-
-SECOND-ORDER HEADINGS. (For example, { \bf 1.1. Database elements})
-should be Times 11-point boldface, initially capitalized, flush left,
-with one blank line before, and one after. If you require a third-order
-heading (we discourage it), use 10-point Times, boldface, initially
-capitalized, flush left, preceded by one blank line, followed by a period
-and your text on the same line.
-
-%-------------------------------------------------------------------------
-\subsection{Footnotes}
-
-Please use footnotes\footnote {This is what a footnote looks like.  It
-often distracts the reader from the main flow of the argument.} sparingly.
-Indeed, try to avoid footnotes altogether and include necessary peripheral
-observations in
-the text (within parentheses, if you prefer, as in this sentence).  If you
-wish to use a footnote, place it at the bottom of the column on the page on
-which it is referenced. Use Times 8-point type, single-spaced.
-
-
-%-------------------------------------------------------------------------
-\subsection{References}
-
-List and number all bibliographical references in 9-point Times,
-single-spaced, at the end of your paper. When referenced in the text,
-enclose the citation number in square brackets, for
-example~\cite{Authors14}.  Where appropriate, include the name(s) of
-editors of referenced books.
-
-\begin{table}
+%---------------------------------------------
+\section{Our Work}
+\begin{figure*}
 \begin{center}
-\begin{tabular}{|l|c|}
+%\fbox{\rule{0pt}{2in} \rule{.9\linewidth}{0pt}}
+\includegraphics[scale=0.8]{data_sample.png}
+\end{center}
+   \caption{Example of training data set.}
+\label{fig:short}
+\end{figure*}
+\subsection{Description of the data}
+ We use a part of film scripts as training data which have been manually labeled with the character and its relative emotion type and degrees. We are provided with another part of film scripts as testing data whose labels are removed. We need to identify the emotions of each character involved in every dialogue and action description in the script scenes and give the emotion degrees.
+
+The Figure 2 illustrates a part of the training data: The table content contains the script of a movie. The character column contains the specified character, that is mentioned in the script. The last six columns are the labels, which are in the training data but missing in the test data. The task is to identify the given character’s six emotions: love, happiness, surprise, anger, fear, and sorrow, and numerically rank them according to the script. A sentence has multiple characters, such as p2, d1 and x2, and for each character, the type and degree of emotion needs to be identified. In the sample, there is one line: An x2 Praise: “Wow, beautiful car!", which contains two emotions: "joy" and "surprise", and they are in degree 2 and 3, respectively. The id of the data is composed of film id,scene id and sentence id, and separated by "\_". The data is not strictly sorted by the id. The data with the same film id and scene id are more dependent to each other than that with different scene ids or film ids.
+\begin{figure}
+\begin{center}
+%\fbox{\rule{0pt}{2in} \rule{.9\linewidth}{0pt}}
+\includegraphics[scale=0.6]{data distribution.png}
+\end{center}
+   \caption{data distribution statistics.}
+\label{fig:short}
+\end{figure}
+
+\begin{figure}
+\begin{center}
+%\fbox{\rule{0pt}{2in} \rule{.9\linewidth}{0pt}}
+\includegraphics[scale=0.3]{emotion distribution.png}
+\end{center}
+   \caption{data distribution graph.}
+\label{fig:short}
+\end{figure}
+We shuffle and split the labeled data  by the ratio of 8:2 and generate training set and validation set.We statistic the label distribution on the training set, as showed in Figure 3 and Figure 4. It is obvious that the data distribution is unbalanced. The emotion degree value 0 accounts for the vast majority and value 1 is the second majority, and the higher the emotional degree value is, the smaller proportion it takes. 
+%---------------------------------------------
+
+
+%\subsection{Method}
+
+\subsection{Baseline Model}
+%\begin{enumerate}
+%\item Method 1
+
+We implemented the baseline version using the simplest way by calling the existing python package simpletransformers MultiLableClassificationModel and got a score of 0.6814 on the test set and 0.6787 on the validation set. Below are the details of the baseline model.
+
+\begin{figure}
+\begin{center}
+%\fbox{\rule{0pt}{2in} \rule{.9\linewidth}{0pt}}
+\includegraphics[scale=0.22]{Method1.png}
+\end{center}
+   \caption{architecture of the baseline model.}
+\label{fig:short}
+\end{figure}
+
+
+ Since there are multiple emotion types (love, joy, surprise, anger, fear and sorrow) to be recognized, it is a multi-label classification problem. The category of each label has four values [0,1,2,3]. However, from the perspective of data distribution, category 2 and 3 account for a relatively small proportion. For simplicity, we only classify it into category 0 or 1, while category 2 and 3 are treated as category 1. 
+ 
+ Combine character names and dialogues into one text, so that the emotion recognition of the character becomes a single text multi-label classification problem. Hence a multi-label binary classifier of simpletransformers package can be used.
+
+ For the sentence features, we adopt Bert-Base vector as the feature,  which is currently popular and has good performance.  
+
+ We take a batch of text samples with a batch size of 8, calculate the maximum text length of this batch of data, convert each character of the text into character ID first, and transform a batch of text of different lengths into the id sequence of the same length,for those shorter sentence Padding 0.
+ Input the character ID sequence into Bert model, and extract the vector from the first unit [CLS] in the last layer of the Bert model as the vector of the whole sentence.  
+
+ Send the sentence vector obtained into the fully-connected network for classification. Since there are six labels, the output logit is 6-dimension.  
+
+ Different from the multi-classification, which do softmax with 6-dimension logit, while the multi-label classification task is to put the six bits of logit into 6 sigmoid activation functions respectively, output probability of 1.  
+ Convert output with probability greater than 0.5 to label 1, and convert output with probability less than or equal to 0.5 to 0. 
+
+The loss function adopts binary cross-entropy in training phase.
+
+We choose the hyper-parameter max-epoch as 2, the default value for all other hyper-parameters. 
+
+\subsection{The drawbacks of baseline model}
+In order to implement the task quickly, for the baseline version, we use the ready-made toolkit simpletransformers to build the model. we  simplify the recognition of emotional value to a multi-label binary classification problem. In fact, there are four values of emotion: 0,1,2, and 3, which belong to multiple categories, however, simpletransformers doesn't support multi-label multi-classification.
+
+Different from ordinary multiple category classification problem, each category is the intensity value of emotion, which is actually numeric value and comparable in size. But if it is regarded as a general classification problem, using cross-entropy loss, then it cannot reflect the fact that the error between intensity value 1 and intensity value 3 is larger than the error between intensity value 1 and intensity value 2, so intuitively we think it makes more sense to turn to regression rather than categorization.  
+Since emotion recognition is aimed at the designated script character, the baseline method is simply to combine the characters of the script into the text of the script, so as to classify the text. But characters play a crucial role here, and if we combine them into text, we treat them like any other word in the text, which gives the model a chance to overlook the importance of the script character.  
+Through data analysis, we know that the emotional value is not only related to the current text, but also related to historic text within the same scene. The same sentence in different contexts will show different emotions, while baseline model does not make use of the above information.  
+Therefore, based on the above analysis, we gradually made improvements, thus gradually improving the scores of validation set and test set.    
+
+
+\subsection{Improved Model 1}
+%\item Method 2
+\begin{figure}
+\begin{center}
+%\fbox{\rule{0pt}{2in} \rule{.9\linewidth}{0pt}}
+\includegraphics[scale=0.5]{Method2.png}
+\end{center}
+   \caption{architecture of the improved model 1.}
+\label{fig:short}
+\end{figure}
+
+Figure 6 shows the architecture of the improved model 1. We modify the output parts and keep the other parts unchanged. We adopt multiple output blocks, one emotion corresponds to one output block, and there are two layer fully-connected network inside each output block. The output dimension of the last layer is 1, without adding any activation function, using MSE as the loss function.  The resulting logit is a float number, and we round logit to get integers in the range [0,1,2,3]. The emotional values of the six emotions correspond to the integral values of the six output blocks. Since there are multiple output blocks, the total loss of the model is the summation of the losses of all outputs.  It's actually a multitasking approach to learning. Each task is to identify one of the emotions, but share sentence vectors.
+Fine-tuning technique is also adopted. we train BERT parameters together with the output blocks,but with different learning rate. We choose output blocks learning rate 1e-04 and BERT learning rate 1e-05.
+\subsubsection{Improved Model 2}
+%\item Method 3
+\begin{figure}
+\begin{center}
+%\fbox{\rule{0pt}{2in} \rule{.9\linewidth}{0pt}}
+\includegraphics[scale=0.5]{Method3.png}
+\end{center}
+   \caption{architecture of the improved model 2 and 3. The only difference is that the text of the improved model 3 includes not only current text but also the historic texts. }
+\label{fig:short}
+\end{figure}
+
+ On the basis of improved method 1,with reference of the way BERT model handles question and answer task, regarding script character as question and script text as paragraph(see Figure 1 c.Question Answering Tasks:SQuAD v1.1),we feed them to the BERT. However, different from question and answer task, which gets the answer start and end position in the sequence of the text,we still take extract the hidden vector from the first position of the output layer as a vector representation of the script text and the script character pair. This vector representation is fed into each output block as a feature as shown in Figure 7. Since script character and script text implement cross attention with each other inside the Bert, the model attaches much more importance to the character than baseline model does.  
+\subsubsection{Improved Model 3}
+%\item Method 4
+
+\begin{table*}
+\begin{center}
+\begin{tabular}{|c|c|c|}
 \hline
-Method & Frobnability \\
-\hline\hline
-Theirs & Frumpy \\
-Yours & Frobbly \\
-Ours & Makes one's heart Frob\\
-\hline
+Name & Validation dataset  & Test dataset\\
+\hline 
+Baseline Model & 0.6787 & 0.6814\\
+\hline 
+Improved Model (1) & 0.6837 & 0.6816\\
+\hline 
+Improved Model (2) & 0.6860 & 0.6842\\
+\hline 
+\bf Improved Model (3) & \bf 0.6907 & \bf 0.6864\\
+\hline 
 \end{tabular}
 \end{center}
-\caption{Results.   Ours is better.}
-\end{table}
+\caption{scores of different models on validation dataset and test dataset}
+\end{table*}
 
+
+On the basis of Improved Model 2, we introduce historical text. Since the text length of the model cannot be increased indefinitely, we only quote previous 2 sentences for the time being. We simply merge the previous two sentences with the current sentence to get a longer text. 
+In order to find and use the historical text, we pre-process the data. We extract all the script text ,remove duplicates of it and sort it by the order of script id,scene id and sentence id to generate a unique and sorted script text list. We give an new id "content\_id" to the unique script text and associate the unique content\_id to the every single data. During training phase or inference phase, we firstly find the content\_id of the original training data or test data, and then get the 3 corresponding texts of content\_id-2,content\_id-1 and content\_id from the script text list and merge them into one longer text in sequence. We use the same architecture of improved model 2 shown in Figure 7, and feed the longer text and script character into the model.In this way, we use historical information to predict the character emotion of the current text. 
+
+
+\subsection{Results}
+
+
+Table 1 shows the performance results for different models. The formulation to calculate the score is discussed in section Performance measure metric. The baseline model gets the lowest score,improved model 1 gains the improvement of  0.005 on the validation dataset and slight improvement on test dataset. Improved Model 2 gains 0.0023 more on the validation dataset and 0.0026 more on the test dataset. Improved Model 3 gets the highest score on both datasets,0.6907 and 0.6864 which are 0.012 and 0.005 higher comparing to baseline model respectively. This shows that our improved methods are working. 
+
+
+
+%---------------------------------------------
+
+\section{Future work}
+ Currently we feed the text into BERT directly,but BERT can't receive too long text. The max length of text of BERT is 512, but our max length is 300 and longer length might result in out of GPU memory easily.  In the future, we plan to try adding an attention layer between the fully connected network and BERT. In stead of merging the all sentences into one longer text,we extract every sentence's BERT vector and feed them to the attention layer.  In this way, we can make use of more historic sentence to predict the emotion.
+
+\section{Conclusion}
+We studied the film script emotion recognition problem which is more challenging than previous sentiment analysis or multi-label emotion analysis, we proposed baseline model using an existing python package simpletransformers and in order to use the existing package,we simplify the problem.And we devised 3 improved methods which gain better performance. First method supports multi-label multi-classification that the existing package simpletransformers doesn't support. We further propose that using regression (later converting the float output into integer output) instead of classification to classify numeric values. In the second method, we input the script character and script text separately to avoid the model ignore the importance of script character. In the third method we make use of the historic sentences. Every method can improve the scores in both validation dataset and test dataset significantly. 
 %-------------------------------------------------------------------------
-\subsection{Illustrations, graphs, and photographs}
 
-All graphics should be centered.  Please ensure that any point you wish to
-make is resolvable in a printed copy of the paper.  Resize fonts in figures
-to match the font in the body text, and choose line widths which render
-effectively in print.  Many readers (and reviewers), even of an electronic
-copy, will choose to print your paper in order to read it.  You cannot
-insist that they do otherwise, and therefore must not assume that they can
-zoom in to see tiny details on a graphic.
+  
 
-When placing figures in \LaTeX, it's almost always best to use
-\verb+\includegraphics+, and to specify the  figure width as a multiple of
-the line width as in the example below
-{\small\begin{verbatim}
-   \usepackage[dvips]{graphicx} ...
-   \includegraphics[width=0.8\linewidth]
-                   {myfile.eps}
-\end{verbatim}
-}
-
-
-%-------------------------------------------------------------------------
-\subsection{Color}
-
-Please refer to the author guidelines on the CVPR 2018 web page for a discussion
-of the use of color in your document.
-
-%------------------------------------------------------------------------
-\section{Final copy}
-
-You must include your signed IEEE copyright release form when you submit
-your finished paper. We MUST have this form before your paper can be
-published in the proceedings.
-
-Please direct any questions to the production editor in charge of these
-proceedings at the IEEE Computer Society Press: Phone (714) 821-8380, or
-Fax (714) 761-1784.
 
 {\small
 \bibliographystyle{ieee}
 \bibliography{egbib}
 }
+
+
 
 \end{document}
