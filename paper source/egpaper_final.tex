@@ -63,9 +63,9 @@ Compared with traditional sentiment analysis,an on-going competition task\footno
 \subsection{Performance measure metric}
 The performance of the algorithm is measured by the common used root mean square error. Error is calculated according to every emotion value identified by the combination of text content plus character name.
 
-$R M S E=\sqrt{\frac{\sum_{i=1}^{n} \sum_{j=1}^{6}\left(y_{i, j}-x_{i, j}\right)^{2}}{6 n}}$\\
+$$R M S E=\sqrt{\frac{\sum_{i=1}^{n} \sum_{j=1}^{6}\left(y_{i, j}-x_{i, j}\right)^{2}}{6 n}}\eqno{1.1}$$
 
-score = 1/(1 + RMSE)\\
+$$score = 1/(1 + RMSE)\eqno{1.2}$$
 
 Where $y_{i,j}$ is the predicted emotion value for the ith data sample and jth emotion type, $x_{i,j}$ are the labeled emotion value for the ith data sample and jth emotion type, and n is the total number of test samples.  
 The final ranking is based on score. 
@@ -95,7 +95,7 @@ In recent years, Bert and its variants produced state-of-the-art results in many
 %\fbox{\rule{0pt}{2in} \rule{.9\linewidth}{0pt}}
 \includegraphics[scale=0.8]{data_sample.png}
 \end{center}
-   \caption{Example of training data set.}
+   \caption{Example of training data set}
 \label{fig:short}
 \end{figure*}
 \subsection{Description of the data}
@@ -107,7 +107,7 @@ In recent years, Bert and its variants produced state-of-the-art results in many
 %\fbox{\rule{0pt}{2in} \rule{.9\linewidth}{0pt}}
 \includegraphics[scale=0.6]{data distribution.png}
 \end{center}
-   \caption{data distribution statistics.}
+   \caption{data distribution statistics}
 \label{fig:short}
 \end{figure}
 
@@ -116,7 +116,7 @@ In recent years, Bert and its variants produced state-of-the-art results in many
 %\fbox{\rule{0pt}{2in} \rule{.9\linewidth}{0pt}}
 \includegraphics[scale=0.3]{emotion distribution.png}
 \end{center}
-   \caption{data distribution graph.}
+   \caption{data distribution graph}
 \label{fig:short}
 \end{figure}
 We shuffle and split the labeled data  by the ratio of 8:2 and generate training set and validation set.We count and plot the emotion value distribution on the training set, as showed in Figure 3 and Figure 4. It is obvious that the data distribution is unbalanced. The emotion degree value 0 accounts for the vast majority and value 1 is the second majority, and the higher the emotional degree value is, the smaller proportion it takes. 
@@ -136,7 +136,7 @@ We implemented the baseline version using the simplest way by calling the existi
 %\fbox{\rule{0pt}{2in} \rule{.9\linewidth}{0pt}}
 \includegraphics[scale=0.22]{Method1.png}
 \end{center}
-   \caption{architecture of the baseline model.}
+   \caption{architecture of the baseline model}
 \label{fig:short}
 \end{figure}
 
@@ -180,12 +180,13 @@ Therefore, based on the above analysis, we gradually made improvements, thus gra
 %\fbox{\rule{0pt}{2in} \rule{.9\linewidth}{0pt}}
 \includegraphics[scale=0.5]{Method2.png}
 \end{center}
-   \caption{architecture of the improved model 1.}
+   \caption{architecture of the improved model 1}
 \label{fig:short}
 \end{figure}
 
 Figure 6 shows the architecture of the improved model 1. We modify the output parts and keep the other parts unchanged.Different from baseline model, We adopt multiple output blocks, one emotion corresponds to one output block, and there are two layer fully-connected network inside each output block. The output dimension of the last layer is 1, without adding any activation function, using MSE as the loss function.
 $$L(f)=\frac{1}{2}\Sigma_{n}(f(x^n)-\hat{y}^n)^2\eqno{3.2}$$
+$$L(f)_{total}=\frac{1}{6}\Sigma_{block}(L(f)^{block})\eqno{3.3}$$
 The resulting logit is a float number, and we round logit to get integers in the range of [0,1,2,3]. The emotional values of the six emotions correspond to the integral values of the six output blocks. Since there are multiple output blocks, the total loss of the model is the summation of the losses of all outputs.  It's actually a multitasking approach to learning. Each task is to identify one of the emotions, but share sentence vectors. Fine-tuning technique is also adopted. We train BERT parameters together with the output blocks,but with different learning rates. We choose output blocks learning rate 1e-04 and BERT learning rate 1e-05.
 \subsubsection{Improved Model 2}
 %\item Method 3
@@ -194,7 +195,7 @@ The resulting logit is a float number, and we round logit to get integers in the
 %\fbox{\rule{0pt}{2in} \rule{.9\linewidth}{0pt}}
 \includegraphics[scale=0.5]{Method3.png}
 \end{center}
-   \caption{architecture of the improved model 2 and 3. The only difference is that the text of the improved model 3 includes not only current text but also the historic texts. }
+   \caption{architecture of the improved model 2 and 3. The only difference is that the text of the improved model 3 includes not only current text but also the historic texts}
 \label{fig:short}
 \end{figure}
 
