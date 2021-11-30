@@ -157,7 +157,8 @@ We implemented the baseline version using the simplest way by calling the existi
  
  Finally,convert output with probability greater than 0.5 to label 1, and convert output with probability less than or equal to 0.5 to 0. 
 
-The loss function adopts binary cross-entropy in training phase.
+The loss function adopts binary cross-entropy in training phase, and the fomula is
+$$L=-ylog\hat{y}-(1-y)log(1-\hat{y})$$
 
 We choose the hyper-parameter max-epoch as 2, the default value for all other hyper-parameters. 
 
